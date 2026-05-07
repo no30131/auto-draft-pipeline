@@ -1,0 +1,370 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "title" },
+            { "name": "url" },
+            { "name": "category" },
+            { "name": "generateImage" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-1200, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000001",
+      "name": "子流程觸發"
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $('子流程觸發').item.json.url;\nlet realUrl = url;\ntry {\n  const match = url.match(/articles\\/([^?]+)/);\n  if (match) {\n    const decoded = Buffer.from(match[1], 'base64').toString('utf-8');\n    const urlMatch = decoded.match(/https?:\\/\\/[^\\s\"<>]+/);\n    if (urlMatch) realUrl = urlMatch[0];\n  }\n} catch(e) {\n  realUrl = url;\n}\nreturn [{\n  json: {\n    ...$input.item.json,\n    realUrl: realUrl\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-976, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000002",
+      "name": "解析真實網址"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.realUrl }}",
+        "options": {
+          "redirect": {
+            "redirect": { "maxRedirects": 5 }
+          },
+          "response": {
+            "response": { "responseFormat": "text" }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-752, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000003",
+      "name": "抓取原文內容"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $json.data || '';\nconst articleMatch = html.match(/<article[^>]*>([\\s\\S]*?)<\\/article>/i);\nlet text = articleMatch ? articleMatch[1] : html;\ntext = text.replace(/<script[\\s\\S]*?<\\/script>/gi, '');\ntext = text.replace(/<style[\\s\\S]*?<\\/style>/gi, '');\ntext = text.replace(/<nav[\\s\\S]*?<\\/nav>/gi, '');\ntext = text.replace(\n  /<figure[^>]*>[\\s\\S]*?<img[^>]*src=\"([^\"]*)\"[^>]*>[\\s\\S]*?<figcaption[^>]*>([\\s\\S]*?)<\\/figcaption>[\\s\\S]*?<\\/figure>/gi,\n  '\\n[IMAGE:$1|CAPTION:$2]\\n'\n);\ntext = text.replace(\n  /<figure[^>]*>[\\s\\S]*?<img[^>]*src=\"([^\"]*)\"[^>]*>[\\s\\S]*?<\\/figure>/gi,\n  '\\n[IMAGE:$1|CAPTION:]\\n'\n);\ntext = text.replace(/<\\/p>/gi, '\\n\\n');\ntext = text.replace(/<[^>]+>/g, '');\ntext = text.replace(/\\r\\n/g, '\\n');\ntext = text.replace(/\\n{3,}/g, '\\n\\n');\ntext = text.replace(/[ \\t]{2,}/g, ' ');\ntext = text.trim();\nreturn [{\n  json: {\n    ...$input.item.json,\n    data: text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-528, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000004",
+      "name": "清理HTML"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=你是一位網站編輯助理。\n\n請根據以下原文內容，改寫成適合網站發布的結構化資料。\n\n要求：\n1. 標題：根據原文語意，下一個清楚、吸引人的標題\n2. 作者：格式為「文 / 媒體名稱」\n3. 內文 sections：\n   - 每個段落獨立為一個 section，不可合併多個段落\n   - 如果段落前有明確的小標題文字，heading 就用那個標題；否則留空字串 \"\"\n   - content 根據原段落意思重新改寫，保留核心資訊與重要數據，使用自己的文字表達，不可直接複製原文\n   - 如果段落前有圖片，imageUrl 填入圖片網址，imageCaption 填入圖說文字；沒有圖片就留空\n4. 參考資料：格式為「來源：原文標題（網址）」\n5. SEO標題：50字內，包含主要關鍵字\n6. SEO描述：120字內，摘要文章核心重點\n7. URL代稱：根據文章標題生成英文 slug，用連字號分隔，全小寫，最多8個單字\n8. 標籤：根據文章內容生成3-5個標籤關鍵字\n9. 封面圖提示詞：用英文寫一段適合這篇文章的圖片生成提示詞，風格為寫實攝影，不要有文字，與文章主題相關\n\n原文標題：{{ $('子流程觸發').item.json.title }}\n原文網址：{{ $('子流程觸發').item.json.url }}\n原文內容：{{ $json.data.substring(0, 12000) }}\n\n請只回傳JSON，不要有其他文字：\n{\"title\": \"文章標題\", \"author\": \"文 / 媒體名稱\", \"sections\": [{\"heading\": \"\", \"content\": \"改寫後的段落內文\", \"imageUrl\": \"\", \"imageCaption\": \"\"}], \"reference\": \"來源：原文標題（網址）\", \"seoTitle\": \"SEO標題\", \"seoDescription\": \"SEO描述\", \"slug\": \"english-slug\", \"tags\": [\"標籤1\", \"標籤2\"], \"imagePrompt\": \"英文圖片提示詞\"}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [-304, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000005",
+      "name": "Gemini 改寫文章",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.content.parts[0].text;\nconst parsed = JSON.parse(raw);\nconst generateImage = $('子流程觸發').item.json.generateImage === 'true';\n\nlet content = '';\ncontent += `<!-- wp:paragraph -->\\n<p><strong>${parsed.author}</strong></p>\\n<!-- /wp:paragraph -->\\n\\n`;\n\nfor (const section of parsed.sections) {\n  if (section.imageUrl) {\n    content += `<!-- wp:image -->\\n<figure class=\"wp-block-image\"><img src=\"${section.imageUrl}\" alt=\"${section.imageCaption || ''}\"/>${section.imageCaption ? `<figcaption class=\"wp-element-caption\">${section.imageCaption}</figcaption>` : ''}</figure>\\n<!-- /wp:image -->\\n\\n`;\n  }\n  if (section.heading && section.heading.trim() !== '') {\n    content += `<!-- wp:heading {\"level\":3} -->\\n<h3 style=\"font-size:18px;color:#000000;font-family:Arial;\">${section.heading}</h3>\\n<!-- /wp:heading -->\\n\\n`;\n  }\n  if (section.content && section.content.trim() !== '') {\n    const subParagraphs = section.content.split(/\\n+/).filter(p => p.trim() !== '');\n    for (const para of subParagraphs) {\n      content += `<!-- wp:paragraph -->\\n<p style=\"font-size:18px;color:#000000;font-family:Arial;\">${para.trim()}</p>\\n<!-- /wp:paragraph -->\\n\\n`;\n    }\n  }\n}\n\ncontent = `<!-- wp:html -->\\n<div class=\"auto-draft\">\\n<!-- /wp:html -->\\n\\n` + content;\ncontent += `<!-- wp:separator -->\\n<hr class=\"wp-block-separator\"/>\\n<!-- /wp:separator -->\\n\\n`;\ncontent += `<!-- wp:heading {\"level\":5} -->\\n<h5><em>【參考資料】</em></h5>\\n<!-- /wp:heading -->\\n\\n`;\ncontent += `<!-- wp:paragraph -->\\n<p style=\\\"font-size:16px;color:#000000;font-family:Arial;\\\"><em>${parsed.reference}</em></p>\\n<!-- /wp:paragraph -->\\n\\n`;\ncontent += `<!-- wp:html -->\\n</div>\\n<!-- /wp:html -->\\n`;\n\n// 分類 ID 對應表，請依照你的 WordPress 設定調整\nconst categoryMap = {\n  'CATEGORY_A': 'YOUR_CATEGORY_ID',\n  'CATEGORY_B': 'YOUR_CATEGORY_ID',\n  'CATEGORY_C': 'YOUR_CATEGORY_ID'\n};\n\nconst categoryName = $('子流程觸發').item.json.category || 'CATEGORY_A';\nconst categoryId = categoryMap[categoryName] || 'YOUR_DEFAULT_CATEGORY_ID';\n\nreturn [{\n  json: {\n    title: parsed.title,\n    generateImage: generateImage,\n    content: content,\n    excerpt: parsed.seoDescription,\n    seoTitle: parsed.seoTitle,\n    seoDescription: parsed.seoDescription,\n    slug: parsed.slug,\n    tags: parsed.tags || [],\n    imagePrompt: parsed.imagePrompt,\n    categoryId: categoryId,\n    wpUserId: 'YOUR_WP_USER_ID',\n    notifyEmail: 'YOUR_EMAIL',\n    origTitle: $('子流程觸發').item.json.title,\n    origUrl: $('子流程觸發').item.json.url\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000006",
+      "name": "組合內文與資料"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_TAG_API_URL/resolve-tags",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tags: $json.tags }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [144, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000007",
+      "name": "呼叫標籤API"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tagIds = $json.tagIds || [];\nconst articleData = $('組合內文與資料').item.json;\nreturn [{\n  json: {\n    ...articleData,\n    tagIds: tagIds\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [368, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000008",
+      "name": "合併文章與標籤"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "gen-image-check",
+              "leftValue": "={{ $json.generateImage }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [592, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000009",
+      "name": "是否生成圖片"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"{{ 'Generate a realistic photographic image for a news article. Style: professional editorial photography, no text, no watermarks, 3:2 landscape ratio. Prompt: ' + $('合併文章與標籤').item.json.imagePrompt }}\"\n    }]\n  }],\n  \"generationConfig\": {\n    \"responseModalities\": [\"IMAGE\"],\n    \"candidateCount\": 1\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [816, 160],
+      "id": "a4fc6d87-0000-0000-0000-000000000010",
+      "name": "生成封面圖",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_GEMINI_API_KEY_CREDENTIAL_ID",
+          "name": "x-goog-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst parts = response.candidates?.[0]?.content?.parts || [];\nconst imagePart = parts.find(p => p.inlineData);\nif (!imagePart) throw new Error('No image generated');\nconst base64Data = imagePart.inlineData.data;\nconst mimeType = imagePart.inlineData.mimeType || 'image/jpeg';\nreturn [{\n  json: { ...$('合併文章與標籤').item.json },\n  binary: {\n    imageData: {\n      data: base64Data,\n      mimeType: mimeType,\n      fileName: 'cover.jpg',\n      fileExtension: 'jpg'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 160],
+      "id": "a4fc6d87-0000-0000-0000-000000000011",
+      "name": "提取圖片資料"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_WORDPRESS_URL/wp-json/wp/v2/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Disposition", "value": "attachment; filename=\"cover.jpg\"" },
+            { "name": "Content-Type",         "value": "image/jpeg" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "imageData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1264, 160],
+      "id": "a4fc6d87-0000-0000-0000-000000000012",
+      "name": "上傳封面圖",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "YOUR_WP_CREDENTIAL_ID",
+          "name": "WordPress Application Password"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_WORDPRESS_URL/wp-json/wp/v2/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "title",          "value": "={{ $('合併文章與標籤').item.json.title }}" },
+            { "name": "content",        "value": "={{ $('合併文章與標籤').item.json.content }}" },
+            { "name": "excerpt",        "value": "={{ $('合併文章與標籤').item.json.excerpt }}" },
+            { "name": "slug",           "value": "={{ $('合併文章與標籤').item.json.slug }}" },
+            { "name": "status",         "value": "draft" },
+            { "name": "categories",     "value": "={{ [$('合併文章與標籤').item.json.categoryId] }}" },
+            { "name": "author",         "value": "={{ $('合併文章與標籤').item.json.wpUserId }}" },
+            { "name": "featured_media", "value": "={{ $('上傳封面圖').item.json.id }}" },
+            { "name": "tags",           "value": "={{ $('合併文章與標籤').item.json.tagIds }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1488, 160],
+      "id": "a4fc6d87-0000-0000-0000-000000000013",
+      "name": "建立草稿（有圖）",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "YOUR_WP_CREDENTIAL_ID",
+          "name": "WordPress Application Password"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_WORDPRESS_URL/wp-json/wp/v2/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "title",      "value": "={{ $('合併文章與標籤').item.json.title }}" },
+            { "name": "content",    "value": "={{ $('合併文章與標籤').item.json.content }}" },
+            { "name": "excerpt",    "value": "={{ $('合併文章與標籤').item.json.excerpt }}" },
+            { "name": "slug",       "value": "={{ $('合併文章與標籤').item.json.slug }}" },
+            { "name": "status",     "value": "draft" },
+            { "name": "categories", "value": "={{ [$('合併文章與標籤').item.json.categoryId] }}" },
+            { "name": "author",     "value": "={{ $('合併文章與標籤').item.json.wpUserId }}" },
+            { "name": "tags",       "value": "={{ $('合併文章與標籤').item.json.tagIds }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1488, 640],
+      "id": "a4fc6d87-0000-0000-0000-000000000014",
+      "name": "建立草稿（無圖）",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "YOUR_WP_CREDENTIAL_ID",
+          "name": "WordPress Application Password"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    postId: $json.id,\n    focuskw: $('合併文章與標籤').item.json.tags?.[0] || '',\n    metadesc: $('合併文章與標籤').item.json.seoDescription || '',\n    title: $('合併文章與標籤').item.json.title,\n    notifyEmail: $('合併文章與標籤').item.json.notifyEmail,\n    origTitle: $('合併文章與標籤').item.json.origTitle,\n    origUrl: $('合併文章與標籤').item.json.origUrl,\n    category: $('子流程觸發').item.json.category\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1712, 400],
+      "id": "a4fc6d87-0000-0000-0000-000000000015",
+      "name": "合併文章ID與SEO資料"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://YOUR_WORDPRESS_URL/wp-json/wp/v2/posts/{{ $json.postId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"meta\": {\n    \"_yoast_wpseo_focuskw\": \"{{ $json.focuskw }}\",\n    \"_yoast_wpseo_metadesc\": \"{{ $json.metadesc }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1936, 304],
+      "id": "a4fc6d87-0000-0000-0000-000000000016",
+      "name": "更新 Yoast SEO Meta",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "YOUR_WP_CREDENTIAL_ID",
+          "name": "WordPress Application Password"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "YOUR_SMTP_FROM_EMAIL",
+        "toEmail": "={{ $json.notifyEmail }}",
+        "subject": "=✅ 草稿已建立：{{ $json.title }}",
+        "html": "=<p>文章草稿已自動建立，請進後台確認後發布：</p><p><b>標題：</b>{{ $json.title }}</p><p><b>分類：</b>{{ $json.category }}</p><p><b>原文來源：</b><a href=\"{{ $json.origUrl }}\">{{ $json.origTitle }}</a></p><p><a href=\"https://YOUR_WORDPRESS_URL/wp-admin/post.php?post={{ $json.postId }}&action=edit\">👉 直接前往草稿編輯頁</a></p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1936, 496],
+      "id": "a4fc6d87-0000-0000-0000-000000000017",
+      "name": "通知草稿已建立",
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "子流程觸發":       { "main": [[{ "node": "解析真實網址",      "type": "main", "index": 0 }]] },
+    "解析真實網址":     { "main": [[{ "node": "抓取原文內容",      "type": "main", "index": 0 }]] },
+    "抓取原文內容":     { "main": [[{ "node": "清理HTML",          "type": "main", "index": 0 }]] },
+    "清理HTML":         { "main": [[{ "node": "Gemini 改寫文章",   "type": "main", "index": 0 }]] },
+    "Gemini 改寫文章":  { "main": [[{ "node": "組合內文與資料",    "type": "main", "index": 0 }]] },
+    "組合內文與資料":   { "main": [[{ "node": "呼叫標籤API",       "type": "main", "index": 0 }]] },
+    "呼叫標籤API":      { "main": [[{ "node": "合併文章與標籤",    "type": "main", "index": 0 }]] },
+    "合併文章與標籤":   { "main": [[{ "node": "是否生成圖片",      "type": "main", "index": 0 }]] },
+    "是否生成圖片": {
+      "main": [
+        [{ "node": "生成封面圖",      "type": "main", "index": 0 }],
+        [{ "node": "建立草稿（無圖）", "type": "main", "index": 0 }]
+      ]
+    },
+    "生成封面圖":       { "main": [[{ "node": "提取圖片資料",      "type": "main", "index": 0 }]] },
+    "提取圖片資料":     { "main": [[{ "node": "上傳封面圖",        "type": "main", "index": 0 }]] },
+    "上傳封面圖":       { "main": [[{ "node": "建立草稿（有圖）",  "type": "main", "index": 0 }]] },
+    "建立草稿（有圖）": { "main": [[{ "node": "合併文章ID與SEO資料", "type": "main", "index": 0 }]] },
+    "建立草稿（無圖）": { "main": [[{ "node": "合併文章ID與SEO資料", "type": "main", "index": 0 }]] },
+    "合併文章ID與SEO資料": {
+      "main": [[
+        { "node": "更新 Yoast SEO Meta", "type": "main", "index": 0 },
+        { "node": "通知草稿已建立",       "type": "main", "index": 0 }
+      ]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  }
+}
