@@ -4,16 +4,27 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "title" },
-            { "name": "url" },
-            { "name": "category" },
-            { "name": "generateImage" }
+            {
+              "name": "title"
+            },
+            {
+              "name": "url"
+            },
+            {
+              "name": "category"
+            },
+            {
+              "name": "generateImage"
+            }
           ]
         }
       },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [-1200, 400],
+      "position": [
+        -1200,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000001",
       "name": "子流程觸發"
     },
@@ -23,7 +34,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-976, 400],
+      "position": [
+        -976,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000002",
       "name": "解析真實網址"
     },
@@ -32,16 +46,23 @@
         "url": "={{ $json.realUrl }}",
         "options": {
           "redirect": {
-            "redirect": { "maxRedirects": 5 }
+            "redirect": {
+              "maxRedirects": 5
+            }
           },
           "response": {
-            "response": { "responseFormat": "text" }
+            "response": {
+              "responseFormat": "text"
+            }
           }
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-752, 400],
+      "position": [
+        -752,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000003",
       "name": "抓取原文內容"
     },
@@ -51,7 +72,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-528, 400],
+      "position": [
+        -528,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000004",
       "name": "清理HTML"
     },
@@ -76,7 +100,10 @@
       },
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.2,
-      "position": [-304, 400],
+      "position": [
+        -304,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000005",
       "name": "Gemini 改寫文章",
       "credentials": {
@@ -92,7 +119,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 400],
+      "position": [
+        -80,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000006",
       "name": "組合內文與資料"
     },
@@ -107,7 +137,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [144, 400],
+      "position": [
+        144,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000007",
       "name": "呼叫標籤API"
     },
@@ -117,7 +150,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [368, 400],
+      "position": [
+        368,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000008",
       "name": "合併文章與標籤"
     },
@@ -147,7 +183,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [592, 400],
+      "position": [
+        592,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000009",
       "name": "是否生成圖片"
     },
@@ -164,7 +203,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [816, 160],
+      "position": [
+        816,
+        160
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000010",
       "name": "生成封面圖",
       "credentials": {
@@ -180,7 +222,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1040, 160],
+      "position": [
+        1040,
+        160
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000011",
       "name": "提取圖片資料"
     },
@@ -193,8 +238,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Disposition", "value": "attachment; filename=\"cover.jpg\"" },
-            { "name": "Content-Type",         "value": "image/jpeg" }
+            {
+              "name": "Content-Disposition",
+              "value": "attachment; filename=\"cover.jpg\""
+            },
+            {
+              "name": "Content-Type",
+              "value": "image/jpeg"
+            }
           ]
         },
         "sendBody": true,
@@ -204,7 +255,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1264, 160],
+      "position": [
+        1264,
+        160
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000012",
       "name": "上傳封面圖",
       "credentials": {
@@ -223,22 +277,52 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "title",          "value": "={{ $('合併文章與標籤').item.json.title }}" },
-            { "name": "content",        "value": "={{ $('合併文章與標籤').item.json.content }}" },
-            { "name": "excerpt",        "value": "={{ $('合併文章與標籤').item.json.excerpt }}" },
-            { "name": "slug",           "value": "={{ $('合併文章與標籤').item.json.slug }}" },
-            { "name": "status",         "value": "draft" },
-            { "name": "categories",     "value": "={{ [$('合併文章與標籤').item.json.categoryId] }}" },
-            { "name": "author",         "value": "={{ $('合併文章與標籤').item.json.wpUserId }}" },
-            { "name": "featured_media", "value": "={{ $('上傳封面圖').item.json.id }}" },
-            { "name": "tags",           "value": "={{ $('合併文章與標籤').item.json.tagIds }}" }
+            {
+              "name": "title",
+              "value": "={{ $('合併文章與標籤').item.json.title }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $('合併文章與標籤').item.json.content }}"
+            },
+            {
+              "name": "excerpt",
+              "value": "={{ $('合併文章與標籤').item.json.excerpt }}"
+            },
+            {
+              "name": "slug",
+              "value": "={{ $('合併文章與標籤').item.json.slug }}"
+            },
+            {
+              "name": "status",
+              "value": "draft"
+            },
+            {
+              "name": "categories",
+              "value": "={{ [$('合併文章與標籤').item.json.categoryId] }}"
+            },
+            {
+              "name": "author",
+              "value": "={{ $('合併文章與標籤').item.json.wpUserId }}"
+            },
+            {
+              "name": "featured_media",
+              "value": "={{ $('上傳封面圖').item.json.id }}"
+            },
+            {
+              "name": "tags",
+              "value": "={{ $('合併文章與標籤').item.json.tagIds }}"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1488, 160],
+      "position": [
+        1488,
+        160
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000013",
       "name": "建立草稿（有圖）",
       "credentials": {
@@ -257,21 +341,48 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "title",      "value": "={{ $('合併文章與標籤').item.json.title }}" },
-            { "name": "content",    "value": "={{ $('合併文章與標籤').item.json.content }}" },
-            { "name": "excerpt",    "value": "={{ $('合併文章與標籤').item.json.excerpt }}" },
-            { "name": "slug",       "value": "={{ $('合併文章與標籤').item.json.slug }}" },
-            { "name": "status",     "value": "draft" },
-            { "name": "categories", "value": "={{ [$('合併文章與標籤').item.json.categoryId] }}" },
-            { "name": "author",     "value": "={{ $('合併文章與標籤').item.json.wpUserId }}" },
-            { "name": "tags",       "value": "={{ $('合併文章與標籤').item.json.tagIds }}" }
+            {
+              "name": "title",
+              "value": "={{ $('合併文章與標籤').item.json.title }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $('合併文章與標籤').item.json.content }}"
+            },
+            {
+              "name": "excerpt",
+              "value": "={{ $('合併文章與標籤').item.json.excerpt }}"
+            },
+            {
+              "name": "slug",
+              "value": "={{ $('合併文章與標籤').item.json.slug }}"
+            },
+            {
+              "name": "status",
+              "value": "draft"
+            },
+            {
+              "name": "categories",
+              "value": "={{ [$('合併文章與標籤').item.json.categoryId] }}"
+            },
+            {
+              "name": "author",
+              "value": "={{ $('合併文章與標籤').item.json.wpUserId }}"
+            },
+            {
+              "name": "tags",
+              "value": "={{ $('合併文章與標籤').item.json.tagIds }}"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1488, 640],
+      "position": [
+        1488,
+        640
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000014",
       "name": "建立草稿（無圖）",
       "credentials": {
@@ -283,11 +394,14 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    postId: $json.id,\n    focuskw: $('合併文章與標籤').item.json.tags?.[0] || '',\n    metadesc: $('合併文章與標籤').item.json.seoDescription || '',\n    title: $('合併文章與標籤').item.json.title,\n    notifyEmail: $('合併文章與標籤').item.json.notifyEmail,\n    origTitle: $('合併文章與標籤').item.json.origTitle,\n    origUrl: $('合併文章與標籤').item.json.origUrl,\n    category: $('子流程觸發').item.json.category\n  }\n}];"
+        "jsCode": "return [{\n  json: {\n    postId: $json.id,\n    focuskw: $('合併文章與標籤').item.json.tags?.[0] || '',\n    metadesc: $('合併文章與標籤').item.json.seoDescription || '',\n    title: $('合併文章與標籤').item.json.title,\n    notifyEmail: $('合併文章與標籤').item.json.notifyEmail,\n    origTitle: $('合併文章與標籤').item.json.origTitle,\n    origUrl: $('合併文章與標籤').item.json.origUrl,\n    category: $('子流程觸發').item.json.category,\n    imagePrompt: $('合併文章與標籤').item.json.imagePrompt || ''\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1712, 400],
+      "position": [
+        1712,
+        400
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000015",
       "name": "合併文章ID與SEO資料"
     },
@@ -304,7 +418,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [1936, 304],
+      "position": [
+        1936,
+        304
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000016",
       "name": "更新 Yoast SEO Meta",
       "credentials": {
@@ -319,12 +436,15 @@
         "fromEmail": "YOUR_SMTP_FROM_EMAIL",
         "toEmail": "={{ $json.notifyEmail }}",
         "subject": "=✅ 草稿已建立：{{ $json.title }}",
-        "html": "=<p>文章草稿已自動建立，請進後台確認後發布：</p><p><b>標題：</b>{{ $json.title }}</p><p><b>分類：</b>{{ $json.category }}</p><p><b>原文來源：</b><a href=\"{{ $json.origUrl }}\">{{ $json.origTitle }}</a></p><p><a href=\"https://YOUR_WORDPRESS_URL/wp-admin/post.php?post={{ $json.postId }}&action=edit\">👉 直接前往草稿編輯頁</a></p>",
+        "html": "=<p>文章草稿已自動建立，請進後台確認後發布：</p><p><b>標題：</b>{{ $json.title }}</p><p><b>分類：</b>{{ $json.category }}</p><p><b>原文來源：</b><a href=\"{{ $json.origUrl }}\">{{ $json.origTitle }}</a></p><p><b>🎨 封面圖 Prompt（可貼到 Gemini / ChatGPT 免費版生圖）：</b><br/>{{ $json.imagePrompt }}</p><p><a href=\"https://YOUR_WORDPRESS_URL/wp-admin/post.php?post={{ $json.postId }}&action=edit\">👉 直接前往草稿編輯頁</a></p>",
         "options": {}
       },
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [1936, 496],
+      "position": [
+        1936,
+        496
+      ],
       "id": "a4fc6d87-0000-0000-0000-000000000017",
       "name": "通知草稿已建立",
       "credentials": {
@@ -336,30 +456,182 @@
     }
   ],
   "connections": {
-    "子流程觸發":       { "main": [[{ "node": "解析真實網址",      "type": "main", "index": 0 }]] },
-    "解析真實網址":     { "main": [[{ "node": "抓取原文內容",      "type": "main", "index": 0 }]] },
-    "抓取原文內容":     { "main": [[{ "node": "清理HTML",          "type": "main", "index": 0 }]] },
-    "清理HTML":         { "main": [[{ "node": "Gemini 改寫文章",   "type": "main", "index": 0 }]] },
-    "Gemini 改寫文章":  { "main": [[{ "node": "組合內文與資料",    "type": "main", "index": 0 }]] },
-    "組合內文與資料":   { "main": [[{ "node": "呼叫標籤API",       "type": "main", "index": 0 }]] },
-    "呼叫標籤API":      { "main": [[{ "node": "合併文章與標籤",    "type": "main", "index": 0 }]] },
-    "合併文章與標籤":   { "main": [[{ "node": "是否生成圖片",      "type": "main", "index": 0 }]] },
-    "是否生成圖片": {
+    "子流程觸發": {
       "main": [
-        [{ "node": "生成封面圖",      "type": "main", "index": 0 }],
-        [{ "node": "建立草稿（無圖）", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "解析真實網址",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "生成封面圖":       { "main": [[{ "node": "提取圖片資料",      "type": "main", "index": 0 }]] },
-    "提取圖片資料":     { "main": [[{ "node": "上傳封面圖",        "type": "main", "index": 0 }]] },
-    "上傳封面圖":       { "main": [[{ "node": "建立草稿（有圖）",  "type": "main", "index": 0 }]] },
-    "建立草稿（有圖）": { "main": [[{ "node": "合併文章ID與SEO資料", "type": "main", "index": 0 }]] },
-    "建立草稿（無圖）": { "main": [[{ "node": "合併文章ID與SEO資料", "type": "main", "index": 0 }]] },
+    "解析真實網址": {
+      "main": [
+        [
+          {
+            "node": "抓取原文內容",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "抓取原文內容": {
+      "main": [
+        [
+          {
+            "node": "清理HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "清理HTML": {
+      "main": [
+        [
+          {
+            "node": "Gemini 改寫文章",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 改寫文章": {
+      "main": [
+        [
+          {
+            "node": "組合內文與資料",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "組合內文與資料": {
+      "main": [
+        [
+          {
+            "node": "呼叫標籤API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "呼叫標籤API": {
+      "main": [
+        [
+          {
+            "node": "合併文章與標籤",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "合併文章與標籤": {
+      "main": [
+        [
+          {
+            "node": "是否生成圖片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "是否生成圖片": {
+      "main": [
+        [
+          {
+            "node": "生成封面圖",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "建立草稿（無圖）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成封面圖": {
+      "main": [
+        [
+          {
+            "node": "提取圖片資料",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取圖片資料": {
+      "main": [
+        [
+          {
+            "node": "上傳封面圖",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "上傳封面圖": {
+      "main": [
+        [
+          {
+            "node": "建立草稿（有圖）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "建立草稿（有圖）": {
+      "main": [
+        [
+          {
+            "node": "合併文章ID與SEO資料",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "建立草稿（無圖）": {
+      "main": [
+        [
+          {
+            "node": "合併文章ID與SEO資料",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "合併文章ID與SEO資料": {
-      "main": [[
-        { "node": "更新 Yoast SEO Meta", "type": "main", "index": 0 },
-        { "node": "通知草稿已建立",       "type": "main", "index": 0 }
-      ]]
+      "main": [
+        [
+          {
+            "node": "更新 Yoast SEO Meta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "通知草稿已建立",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
