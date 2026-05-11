@@ -30,20 +30,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const url = $('子流程觸發').item.json.url;\nlet realUrl = url;\ntry {\n  const match = url.match(/articles\\/([^?]+)/);\n  if (match) {\n    const decoded = Buffer.from(match[1], 'base64').toString('utf-8');\n    const urlMatch = decoded.match(/https?:\\/\\/[^\\s\"<>]+/);\n    if (urlMatch) realUrl = urlMatch[0];\n  }\n} catch(e) {\n  realUrl = url;\n}\nreturn [{\n  json: {\n    ...$input.item.json,\n    realUrl: realUrl\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -976,
-        400
-      ],
-      "id": "a4fc6d87-0000-0000-0000-000000000002",
-      "name": "解析真實網址"
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.realUrl }}",
+        "url": "={{ $json.url }}",
         "options": {
           "redirect": {
             "redirect": {
@@ -457,17 +444,6 @@
   ],
   "connections": {
     "子流程觸發": {
-      "main": [
-        [
-          {
-            "node": "解析真實網址",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "解析真實網址": {
       "main": [
         [
           {

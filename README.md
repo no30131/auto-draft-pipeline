@@ -1,50 +1,48 @@
-# RSS 新聞 → AI 改寫 → WordPress 草稿
+# 📰 內容自動化流程 n8n + Gemini + WordPress
 
-一套以 n8n 為核心的內容自動化流程。定時從 RSS 抓取新聞，用 Gemini AI 篩選並改寫文章，自動建立 WordPress 草稿並通知編輯上架。
+[English](#-rss-news--ai-rewrite--wordpress-draft) | 繁體中文
 
-## 它做什麼
+一套以 n8n 為核心的內容自動化流程。定期從 RSS 抓取新聞，用 Gemini 篩選並改寫文章，自動建立 WordPress 草稿並通知編輯上架。
+
+---
+
+## ✨ 它做什麼
 
 1. **抓取** — 定時從 Google News RSS 撈新聞，透過 SerpAPI 解析真實文章連結
 2. **篩選** — Gemini 判斷每篇是否符合你的網站定位（篩選條件在 prompt 裡自訂）
 3. **Email 摘要** — 通過篩選的文章整理成 HTML 清單，寄給編輯
 4. **一鍵建稿** — 編輯點信裡的按鈕 → Webhook 觸發子流程 → Gemini 用自己的文字改寫原文 → 自動建立 WordPress 草稿，含 SEO meta 與標籤
-5. **通知** — 寄信給編輯，附上草稿編輯頁連結與封面圖生成 Prompt（可直接貼到 Gemini / ChatGPT 免費版生圖）
+5. **通知** — 寄信給編輯，附上草稿編輯頁連結與封面圖生成 Prompt（可直接貼到 Gemini 免費版生圖）
 
-## 架構
+---
 
-```
-news-digest.json            Workflow 1 — 定時摘要信
-  ↓ Cron 觸發
-  ↓ RSS 抓取 → 限筆數 → 清理標題 → 去重 → SerpAPI 取真實 URL
-  ↓ Gemini 篩選（isRelevant + 分類 + 摘要）
-  ↓ 組 HTML 清單 → 彙整 → 寄信給編輯
+## 🏗 架構
 
-  信件內每篇文章有兩個按鈕：
-  [✍️ 生成草稿+封面圖]
-  [✍️ 生成草稿]  →  點擊觸發 Webhook
+### Workflow 1 — 定期摘要信（`news-digest.json`）
 
-draft-trigger.json          Workflow 2 — Webhook 接收器
-  ↓ 接收請求（title, url, category, generateImage）
-  ↓ 立即回應瀏覽器（避免逾時）
-  ↓ 非同步呼叫子流程
+![news-digest workflow](docs/images/news-digest.png)
 
-create-draft.json           Workflow 3 — 建立草稿（子流程）
-  ↓ 解析 Google News 短網址
-  ↓ 抓取原文 HTML → 清理 → 取出正文
-  ↓ Gemini 改寫文章（結構化輸出：段落、SEO、slug、標籤、圖片提示詞）
-  ↓ 呼叫 wp-tag-resolver（取得或建立 WordPress 標籤 ID）
-  ↓ [選] Gemini 生成封面圖 → 上傳到 WordPress Media
-  ↓ 建立 WordPress 草稿
-  ↓ 更新 Yoast SEO Meta
-  ↓ 寄通知信附草稿連結
+Cron 觸發 → RSS 抓取 → SerpAPI 取真實 URL → Gemini 篩選（isRelevant + 分類 + 摘要）→ 組 HTML 清單 → 寄信給編輯。信件內每篇文章有兩個按鈕：**[✍️ 生成草稿+封面圖]** 與 **[✍️ 生成草稿]**，點擊即觸發 Webhook。
 
-wp-tag-resolver/            Express 微服務 — 標籤解析
-  ↓ POST /resolve-tags { tags: ["標籤A", "標籤B"] }
-  ↓ 查詢 WordPress Tags API，不存在則建立
-  ↓ 回傳 { tagIds: [123, 456] }
-```
+### Workflow 2 — Webhook 接收器（`draft-trigger.json`）
 
-## 需要的服務
+![draft-trigger workflow](docs/images/draft-trigger.png)
+
+接收請求（title, url, category, generateImage）→ 立即回應瀏覽器（避免逾時）→ 非同步呼叫子流程。
+
+### Workflow 3 — 建立草稿（`create-draft.json`）
+
+![create-draft workflow](docs/images/create-draft.png)
+
+抓取原文 HTML → Gemini 改寫文章（結構化輸出：段落、SEO、slug、標籤、圖片提示詞）→ 呼叫 wp-tag-resolver → [選] Gemini 生成封面圖 → 建立 WordPress 草稿 → 更新 Yoast SEO Meta → 寄通知信。
+
+### `wp-tag-resolver/` — Express 微服務
+
+`POST /resolve-tags { tags: ["標籤A", "標籤B"] }` → 查詢 WordPress Tags API，不存在則建立 → 回傳 `{ tagIds: [123, 456] }`
+
+---
+
+## 🔧 需要的服務
 
 | 服務 | 用途 | 費用 |
 |------|------|------|
@@ -55,7 +53,9 @@ wp-tag-resolver/            Express 微服務 — 標籤解析
 | SMTP | 寄信（Gmail、Resend 等） | 免費 |
 | 任意 Node.js 主機 | 部署 wp-tag-resolver | 免費方案可用（Zeabur、Railway、Render） |
 
-## 設定
+---
+
+## 🚀 設定
 
 ### 1. 部署 wp-tag-resolver
 
@@ -118,24 +118,42 @@ node index.js
 
 啟用全部三個工作流程。`news-digest.json` 依排程執行（預設：每週一、三、五 08:00）。
 
-## 自訂
+---
+
+## ⚙️ 自訂
 
 - **RSS 關鍵字** — 修改 `news-digest.json` 中 RSS 網址的 `q=` 參數
 - **排程** — 修改「定時觸發」節點的 cron 表達式
 - **封鎖來源** — 修改「排除重複與黑名單」節點的 `blockedSources` 陣列
 - **封面圖** — 通知信內附有 AI 生成的圖片 Prompt，可貼到 Gemini 或 ChatGPT 免費版生圖後手動上傳；或傳入 `generateImage=true` 讓流程自動呼叫 Gemini Image API 生圖（每張需額外 API 費用）
 
-## 授權
+---
+
+## 📄 授權
 
 MIT
 
 ---
 
-# RSS News → AI Rewrite → WordPress Draft
+## ☕ Buy me a coffee
+
+如果這個專案對你有幫助，歡迎請我喝杯咖啡 ☕
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ko--fi-72C1AA?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/no30131)
+
+也歡迎訂閱我的 YouTube 頻道 🎬 [Melody's Flow | 軟體手作與日常隨筆](https://www.youtube.com/@MelodysFlow)
+
+---
+
+# 📰 RSS News → AI Rewrite → WordPress Draft
+
+English | [繁體中文](#-內容自動化流程-n8n--gemini--wordpress)
 
 An n8n-based content automation pipeline. Periodically fetches RSS news, uses Gemini AI to filter and rewrite articles, then automatically creates WordPress drafts and notifies your editor.
 
-## What it does
+---
+
+## ✨ What it does
 
 1. **Fetch** — Pull RSS from Google News on a schedule, resolve real article URLs via SerpAPI
 2. **Filter** — Gemini decides if each article fits your site (you define the criteria in the prompt)
@@ -143,16 +161,35 @@ An n8n-based content automation pipeline. Periodically fetches RSS news, uses Ge
 4. **One-click draft** — Editor clicks a link in the email → Webhook triggers the sub-workflow → Gemini rewrites the article in your own words → WordPress draft created with SEO meta and tags
 5. **Notify** — Editor receives an email with a direct link to the draft and a cover image prompt (paste into free Gemini or ChatGPT to generate an image)
 
-## Architecture
+---
 
-```
-news-digest.json            Workflow 1 — scheduled digest email
-draft-trigger.json          Workflow 2 — webhook receiver
-create-draft.json           Workflow 3 — draft creation sub-workflow
-wp-tag-resolver/            Express microservice — tag resolution
-```
+## 🏗 Architecture
 
-## Requirements
+### Workflow 1 — Scheduled digest email (`news-digest.json`)
+
+![news-digest workflow](docs/images/news-digest.png)
+
+Cron → RSS fetch → SerpAPI URL resolution → Gemini filter (isRelevant + category + summary) → HTML digest → email to editor. Each article has two buttons: **[✍️ Generate draft + cover]** and **[✍️ Generate draft]**, which trigger the webhook on click.
+
+### Workflow 2 — Webhook receiver (`draft-trigger.json`)
+
+![draft-trigger workflow](docs/images/draft-trigger.png)
+
+Receives request (title, url, category, generateImage) → immediately responds to browser (avoid timeout) → calls sub-workflow asynchronously.
+
+### Workflow 3 — Draft creation sub-workflow (`create-draft.json`)
+
+![create-draft workflow](docs/images/create-draft.png)
+
+Fetch & clean article HTML → Gemini rewrite (structured output: paragraphs, SEO, slug, tags, image prompt) → call wp-tag-resolver → [optional] Gemini image generation → create WordPress draft → update Yoast SEO meta → send notification email.
+
+### `wp-tag-resolver/` — Express microservice
+
+`POST /resolve-tags { tags: ["Tag A", "Tag B"] }` → query WordPress Tags API, create if missing → return `{ tagIds: [123, 456] }`
+
+---
+
+## 🔧 Requirements
 
 | Service | Purpose | Cost |
 |---------|---------|------|
@@ -163,7 +200,9 @@ wp-tag-resolver/            Express microservice — tag resolution
 | SMTP | Email sending (Gmail, Resend, etc.) | Free |
 | Any Node.js host | Deploy wp-tag-resolver | Free tier (Zeabur, Railway, Render) |
 
-## Setup
+---
+
+## 🚀 Setup
 
 ### 1. Deploy wp-tag-resolver
 
@@ -226,13 +265,27 @@ In `create-draft.json`, update the `categoryMap` in the "組合內文與資料" 
 
 Enable all three workflows. `news-digest.json` runs on cron (default: Monday, Wednesday, Friday at 08:00).
 
-## Customization
+---
+
+## ⚙️ Customization
 
 - **RSS keywords** — Edit the `q=` parameter in the RSS URL inside `news-digest.json`
 - **Schedule** — Change the cron expression in the "定時觸發" node
 - **Blocked sources** — Edit the `blockedSources` array in the "排除重複與黑名單" node
 - **Cover image** — The notification email includes an AI-generated image prompt. Paste it into free Gemini or ChatGPT to create an image, then upload manually. Pass `generateImage=true` to have the workflow call the Gemini Image API automatically (incurs API cost per image).
 
-## License
+---
+
+## 📄 License
 
 MIT
+
+---
+
+## ☕ Buy me a coffee
+
+If this project has been helpful, feel free to buy me a coffee ☕
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ko--fi-72C1AA?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/no30131)
+
+Also feel free to check out my YouTube channel 🎬 [Melody's Flow](https://www.youtube.com/@MelodysFlow)
