@@ -22,7 +22,7 @@
 
 ![news-digest workflow](docs/images/news-digest.png)
 
-Cron 觸發 → RSS 抓取 → SerpAPI 取真實 URL → Gemini 篩選（isRelevant + 分類 + 摘要）→ 組 HTML 清單 → 寄信給編輯。信件內每篇文章有兩個按鈕：**[✍️ 生成草稿+封面圖]** 與 **[✍️ 生成草稿]**，點擊即觸發 Webhook。
+Cron 觸發 → RSS 抓取 → Gemini 篩選（isRelevant + 分類 + 摘要）→ 過濾不相關 → SerpAPI 取真實 URL（僅對通過篩選的文章）→ 組 HTML 清單 → 寄信給編輯。信件內每篇文章有兩個按鈕：**[✍️ 生成草稿+封面圖]** 與 **[✍️ 生成草稿]**，點擊即觸發 Webhook。
 
 ### Workflow 2 — Webhook 接收器（`draft-trigger.json`）
 
@@ -169,7 +169,7 @@ An n8n-based content automation pipeline. Periodically fetches RSS news, uses Ge
 
 ![news-digest workflow](docs/images/news-digest.png)
 
-Cron → RSS fetch → SerpAPI URL resolution → Gemini filter (isRelevant + category + summary) → HTML digest → email to editor. Each article has two buttons: **[✍️ Generate draft + cover]** and **[✍️ Generate draft]**, which trigger the webhook on click.
+Cron → RSS fetch → Gemini filter (isRelevant + category + summary) → drop irrelevant → SerpAPI URL resolution (only for articles that pass) → HTML digest → email to editor. Each article has two buttons: **[✍️ Generate draft + cover]** and **[✍️ Generate draft]**, which trigger the webhook on click.
 
 ### Workflow 2 — Webhook receiver (`draft-trigger.json`)
 
