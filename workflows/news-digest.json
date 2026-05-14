@@ -109,7 +109,7 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "q",   "value": "={{ $json.origTitle }}" },
+            { "name": "q",   "value": "={{ $('保存標題連結').item.json.origTitle }}" },
             { "name": "num", "value": "3" },
             { "name": "hl",  "value": "zh-tw" },
             { "name": "gl",  "value": "tw" }
@@ -119,7 +119,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [1040, 400],
+      "position": [1488, 400],
       "id": "c0000000-0000-0000-0000-000000000007",
       "name": "SerpAPI 取真實 URL",
       "credentials": {
@@ -135,7 +135,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1264, 400],
+      "position": [1712, 400],
       "id": "c0000000-0000-0000-0000-000000000008",
       "name": "回傳真實URL"
     },
@@ -160,7 +160,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.2,
-      "position": [1488, 400],
+      "position": [1040, 400],
       "id": "c0000000-0000-0000-0000-000000000009",
       "name": "Gemini 篩選",
       "credentials": {
@@ -197,7 +197,7 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
-      "position": [1712, 400],
+      "position": [1264, 400],
       "id": "c0000000-0000-0000-0000-000000000010",
       "name": "只保留相關新聞"
     },
@@ -263,11 +263,11 @@
     "只抓20篇":        { "main": [[{ "node": "清理標題",            "type": "main", "index": 0 }]] },
     "清理標題":        { "main": [[{ "node": "排除重複與黑名單",    "type": "main", "index": 0 }]] },
     "排除重複與黑名單": { "main": [[{ "node": "保存標題連結",        "type": "main", "index": 0 }]] },
-    "保存標題連結":    { "main": [[{ "node": "SerpAPI 取真實 URL",  "type": "main", "index": 0 }]] },
-    "SerpAPI 取真實 URL": { "main": [[{ "node": "回傳真實URL",      "type": "main", "index": 0 }]] },
-    "回傳真實URL":     { "main": [[{ "node": "Gemini 篩選",         "type": "main", "index": 0 }]] },
+    "保存標題連結":    { "main": [[{ "node": "Gemini 篩選",         "type": "main", "index": 0 }]] },
     "Gemini 篩選":     { "main": [[{ "node": "只保留相關新聞",      "type": "main", "index": 0 }]] },
-    "只保留相關新聞":  { "main": [[{ "node": "組 HTML 字串",        "type": "main", "index": 0 }]] },
+    "只保留相關新聞":  { "main": [[{ "node": "SerpAPI 取真實 URL",  "type": "main", "index": 0 }]] },
+    "SerpAPI 取真實 URL": { "main": [[{ "node": "回傳真實URL",      "type": "main", "index": 0 }]] },
+    "回傳真實URL":     { "main": [[{ "node": "組 HTML 字串",        "type": "main", "index": 0 }]] },
     "組 HTML 字串":    { "main": [[{ "node": "彙整為 HTML 清單",    "type": "main", "index": 0 }]] },
     "彙整為 HTML 清單": { "main": [[{ "node": "發信給編輯",         "type": "main", "index": 0 }]] }
   },
