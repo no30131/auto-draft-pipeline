@@ -1,6 +1,6 @@
 # 📰 內容自動化流程 n8n + Gemini + WordPress
 
-[English](#-rss-news--ai-rewrite--wordpress-draft) | 繁體中文
+[English](#-content-automation-pipeline-n8n--gemini--wordpress) | 繁體中文
 
 一套以 n8n 為核心的內容自動化流程。定期從 RSS 抓取新聞，用 Gemini 篩選並改寫文章，自動建立 WordPress 草稿並通知編輯上架。
 
