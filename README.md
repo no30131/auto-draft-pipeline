@@ -126,6 +126,7 @@ node index.js
 - **排程** — 修改「定時觸發」節點的 cron 表達式
 - **封鎖來源** — 修改「排除重複與黑名單」節點的 `blockedSources` 陣列
 - **封面圖** — 通知信內附有 AI 生成的圖片 Prompt，可貼到 Gemini 或 ChatGPT 免費版生圖後手動上傳；或傳入 `generateImage=true` 讓流程自動呼叫 Gemini Image API 生圖（每張需額外 API 費用）
+- **草稿標記區塊** — 草稿內文開頭會有一個 `<div class="auto-draft">` 標記區塊，內文也會有幾個“區塊包含未預期或無效的內容。”，這是自動化流程留下的識別標籤，不影響排版，可直接忽略。
 
 ---
 
@@ -145,7 +146,7 @@ MIT
 
 ---
 
-# 📰 RSS News → AI Rewrite → WordPress Draft
+# 📰 Content Automation Pipeline n8n + Gemini + WordPress
 
 English | [繁體中文](#-內容自動化流程-n8n--gemini--wordpress)
 
@@ -273,6 +274,7 @@ Enable all three workflows. `news-digest.json` runs on cron (default: Monday, We
 - **Schedule** — Change the cron expression in the "定時觸發" node
 - **Blocked sources** — Edit the `blockedSources` array in the "排除重複與黑名單" node
 - **Cover image** — The notification email includes an AI-generated image prompt. Paste it into free Gemini or ChatGPT to create an image, then upload manually. Pass `generateImage=true` to have the workflow call the Gemini Image API automatically (incurs API cost per image).
+- **Draft marker block** — Each draft begins with a `<div class="auto-draft">` block, and you may see a few "block contains unexpected or invalid content" notices in the editor. These are traces left by the automation workflow and do not affect the layout. You can ignore them.
 
 ---
 
