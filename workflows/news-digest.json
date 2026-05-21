@@ -131,7 +131,8 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = $json.organic_results || [];\nlet realUrl = $('保存標題連結').item.json.origLink;\n\nif (results.length > 0) {\n  const first = results[0];\n  if (first.link\n    && !first.link.includes('news.google.com')\n    && !first.link.includes('vertexaisearch')) {\n    realUrl = first.link;\n  }\n}\n\nreturn [{\n  json: {\n    origTitle: $('保存標題連結').item.json.origTitle,\n    origLink: $('保存標題連結').item.json.origLink,\n    origSnippet: $('保存標題連結').item.json.origSnippet,\n    realUrl: realUrl\n  }\n}];"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const newsResults = $json.news_results || [];\nconst orgResults = $json.organic_results || [];\nconst results = newsResults.length > 0 ? newsResults : orgResults;\n\nconst badDomains = [\n  'wikipedia.org', 'youtube.com', 'youtu.be',\n  'facebook.com', 'twitter.com', 'instagram.com',\n  'reddit.com', 'news.google.com', 'vertexaisearch'\n];\n\nlet realUrl = $('保存標題連結').item.json.origLink;\n\nfor (const result of results) {\n  const link = result.link || result.url || '';\n  if (!link) continue;\n  const isBad = badDomains.some(d => link.includes(d));\n  if (!isBad) {\n    realUrl = link;\n    break;\n  }\n}\n\n$json.origTitle = $('保存標題連結').item.json.origTitle;\n$json.origLink = $('保存標題連結').item.json.origLink;\n$json.origSnippet = $('保存標題連結').item.json.origSnippet;\n$json.realUrl = realUrl;\n\nreturn $json;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -203,20 +204,11 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "html-item",
-              "name": "htmlItem",
-              "value": "={{ '<li><b>' + $('回傳真實URL').item.json.origTitle + '</b>　［' + JSON.parse($('Gemini 篩選').item.json.content.parts[0].text).category + '］<br>' + JSON.parse($('Gemini 篩選').item.json.content.parts[0].text).summary + '<br><a href=\"' + $('回傳真實URL').item.json.realUrl + '\">閱讀原文</a>　｜　<a href=\"https://YOUR_N8N_DOMAIN/webhook/publish-article?title=' + encodeURIComponent($('回傳真實URL').item.json.origTitle) + '&url=' + encodeURIComponent($('回傳真實URL').item.json.realUrl) + '&category=' + encodeURIComponent(JSON.parse($('Gemini 篩選').item.json.content.parts[0].text).category) + '\">✍️ 生成草稿</a><br><details><summary>⚠️ 含圖版（點我展開，費用較高）</summary><a href=\"https://YOUR_N8N_DOMAIN/webhook/publish-article?title=' + encodeURIComponent($('回傳真實URL').item.json.origTitle) + '&url=' + encodeURIComponent($('回傳真實URL').item.json.realUrl) + '&category=' + encodeURIComponent(JSON.parse($('Gemini 篩選').item.json.content.parts[0].text).category) + '&generateImage=true\">✍️ 生成草稿+圖</a></details></li>' }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
+        "mode": "runOnceForEachItem",
+        "jsCode": "const origTitle = $json.origTitle || '';\nconst realUrl = $json.realUrl || $json.origLink;\n\nlet geminiData;\ntry {\n  const rawText = $('Gemini 篩選').item.json.content.parts[0].text;\n  geminiData = JSON.parse(rawText);\n} catch (e) {\n  geminiData = { category: 'CATEGORY_A', summary: '' };\n}\n\nlet category = geminiData.category || 'CATEGORY_A';\nif (Array.isArray(category)) {\n  category = category.join(', ');\n}\nconst summary = geminiData.summary || '';\n\nconst readStyle = 'display:inline-block;padding:4px 8px;margin:4px 2px;background:#f1f1f1;color:#333;text-decoration:none;border-radius:4px;border:1px solid #ccc;';\nconst btnStyle = 'display:inline-block;padding:4px 8px;margin:4px 2px;background:#007bff;color:white;text-decoration:none;border-radius:4px;';\n\nconst base = 'https://YOUR_N8N_DOMAIN/webhook/publish-article';\nconst qTitle = encodeURIComponent(origTitle);\nconst qUrl = encodeURIComponent(realUrl);\nconst qCat = encodeURIComponent(category);\n\nconst readBtn = `<a href=\"${realUrl}\" style=\"${readStyle}\">閱讀原文</a>`;\nconst draftBtn = `<a href=\"${base}?title=${qTitle}&url=${qUrl}&category=${qCat}\" style=\"${btnStyle}\">✍️ 生成草稿</a>`;\nconst draftImgBtn = `<a href=\"${base}?title=${qTitle}&url=${qUrl}&category=${qCat}&generateImage=true\" style=\"${btnStyle}\">✍️ 生成草稿+圖</a>`;\n\n$json.htmlItem = `<li><b>${origTitle}</b>　［${category}］<br>${summary}<br>${readBtn}　｜　${draftBtn}　｜　<details><summary>⚠️ 含圖版（費用較高）</summary>${draftImgBtn}</details></li>`;\n\nreturn $json;"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1936, 400],
       "id": "c0000000-0000-0000-0000-000000000011",
       "name": "組 HTML 字串"
