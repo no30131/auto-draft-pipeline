@@ -1,0 +1,159 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "文章草稿生成",
+        "formDescription": "貼上文章網址，系統將自動抓取標題、分析分類，並建立草稿。完成後將寄信通知您。",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "文章網址",
+              "fieldType": "url",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "options": {
+          "formSubmittedText": "草稿建立中，完成後將寄信通知您 📬"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "id": "c0000000-0000-0000-0000-000000000001",
+      "name": "輸入文章網址",
+      "webhookId": "YOUR_FORM_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "url": "=https://r.jina.ai/{{ $json['文章網址'] }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 5
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0],
+      "id": "c0000000-0000-0000-0000-000000000002",
+      "name": "Jina抓取文章"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.data || '';\n\n// Jina 回應第一行格式：Title: 文章標題\nconst titleMatch = text.match(/^Title:\\s*(.+)$/m);\nconst title = titleMatch ? titleMatch[1].trim() : $('輸入文章網址').item.json['文章網址'];\n\n// 取內文前 500 字供 Gemini 判斷分類\nconst bodyStart = text.indexOf('\\n\\n');\nconst snippet = bodyStart > -1 ? text.substring(bodyStart).trim().substring(0, 500) : text.substring(0, 500);\n\nreturn [{\n  json: {\n    url: $('輸入文章網址').item.json['文章網址'],\n    title: title,\n    snippet: snippet,\n    author: 'YOUR_AUTHOR_ID'  // 替換為 WordPress 使用者名稱\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0],
+      "id": "c0000000-0000-0000-0000-000000000003",
+      "name": "提取標題"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=你是網站編輯，請根據以下文章標題與摘要，從分類清單中選出最合適的一個分類。\n\n分類清單：CATEGORY_A, CATEGORY_B, CATEGORY_C\n\n文章標題：{{ $json.title }}\n內容摘要：{{ $json.snippet }}\n\n請只回傳JSON，不要有其他文字：\n{\"category\": \"分類名稱\"}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [720, 0],
+      "id": "c0000000-0000-0000-0000-000000000004",
+      "name": "Gemini判斷分類",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "YOUR_GEMINI_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let category = 'YOUR_DEFAULT_CATEGORY';\ntry {\n  const raw = $json.content.parts[0].text;\n  const parsed = JSON.parse(raw);\n  category = parsed.category || 'YOUR_DEFAULT_CATEGORY';\n} catch(e) {}\n\nreturn [{\n  json: {\n    title: $('提取標題').item.json.title,\n    url: $('提取標題').item.json.url,\n    category: category,\n    author: $('提取標題').item.json.author,\n    generateImage: 'false'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 0],
+      "id": "c0000000-0000-0000-0000-000000000005",
+      "name": "組合子流程參數"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBWORKFLOW_ID",
+          "mode": "list",
+          "cachedResultName": "create-draft"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.title }}",
+            "url": "={{ $json.url }}",
+            "category": "={{ $json.category }}",
+            "author": "={{ $json.author }}",
+            "generateImage": "false"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "title",         "displayName": "title",         "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "url",           "displayName": "url",           "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "category",      "displayName": "category",      "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "author",        "displayName": "author",        "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "generateImage", "displayName": "generateImage", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [1200, 0],
+      "id": "c0000000-0000-0000-0000-000000000006",
+      "name": "呼叫草稿子流程"
+    }
+  ],
+  "connections": {
+    "輸入文章網址": {
+      "main": [[{"node": "Jina抓取文章", "type": "main", "index": 0}]]
+    },
+    "Jina抓取文章": {
+      "main": [[{"node": "提取標題", "type": "main", "index": 0}]]
+    },
+    "提取標題": {
+      "main": [[{"node": "Gemini判斷分類", "type": "main", "index": 0}]]
+    },
+    "Gemini判斷分類": {
+      "main": [[{"node": "組合子流程參數", "type": "main", "index": 0}]]
+    },
+    "組合子流程參數": {
+      "main": [[{"node": "呼叫草稿子流程", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  }
+}

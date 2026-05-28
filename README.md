@@ -36,6 +36,14 @@ Cron 觸發 → RSS 抓取 → Gemini 篩選（isRelevant + 分類 + 摘要）�
 
 抓取原文 HTML → Gemini 改寫文章（結構化輸出：段落、SEO、slug、標籤、圖片提示詞）→ 呼叫 wp-tag-resolver → [選] Gemini 生成封面圖 → 建立 WordPress 草稿 → 更新 Yoast SEO Meta → 寄通知信。
 
+### Workflow 4 — 手動輸入 URL 建稿（`manual-url-draft.json`）
+
+![manual-url-draft workflow](docs/images/manual-url-draft.png)
+
+貼上任意文章網址 → Jina 抓取原文並提取標題 → Gemini 判斷分類 → 呼叫 `create-draft.json` 子流程。表單送出後立即回應，草稿在背景建立，完成後寄信通知。
+
+> 每位上稿者各部署一份，將 `YOUR_AUTHOR_ID` 替換為該使用者的 WordPress 使用者名稱，即可用獨立連結觸發且無需在表單中選擇作者。
+
 ### `wp-tag-resolver/` — Express 微服務
 
 `POST /resolve-tags { tags: ["標籤A", "標籤B"] }` → 查詢 WordPress Tags API，不存在則建立 → 回傳 `{ tagIds: [123, 456] }`
@@ -87,6 +95,7 @@ node index.js
 1. 先匯入 `create-draft.json` — 複製其 Workflow ID
 2. 匯入 `draft-trigger.json` — 在「呼叫子流程」節點填入 `YOUR_SUBWORKFLOW_ID`
 3. 匯入 `news-digest.json`
+4. （選用）匯入 `manual-url-draft.json` — 在「Call Draft Sub-workflow」節點填入 `YOUR_SUBWORKFLOW_ID`，並將 `YOUR_AUTHOR_ID` 替換為 WordPress 使用者名稱；每位上稿者部署一份
 
 ### 4. 替換佔位符
 
@@ -107,6 +116,9 @@ node index.js
 | `YOUR_N8N_DOMAIN` | 你的 n8n 公開網址（Webhook 必須可從外部連線） |
 | `YOUR_SUBWORKFLOW_ID` | create-draft.json 的 Workflow ID |
 | `YOUR_CATEGORY_ID` | WordPress 分類 ID（wp-admin → 文章 → 分類） |
+| `YOUR_AUTHOR_ID` | WordPress 使用者名稱（manual-url-draft.json 專用） |
+| `YOUR_FORM_WEBHOOK_ID` | 任意不重複的字串，作為表單網址的路徑（manual-url-draft.json 專用） |
+| `YOUR_DEFAULT_CATEGORY` | Gemini 無法判斷時的備援分類名稱（manual-url-draft.json 專用） |
 
 ### 5. 自訂 Prompt
 
@@ -116,7 +128,7 @@ node index.js
 
 ### 6. 啟用
 
-啟用全部三個工作流程。`news-digest.json` 依排程執行（預設：每週一、三、五 08:00）。
+啟用全部工作流程。`news-digest.json` 依排程執行（預設：每週一、三、五 08:00）。`manual-url-draft.json` 啟用後即可透過 n8n 提供的表單網址使用。
 
 ---
 
@@ -184,6 +196,12 @@ Receives request (title, url, category, generateImage) → immediately responds 
 
 Fetch & clean article HTML → Gemini rewrite (structured output: paragraphs, SEO, slug, tags, image prompt) → call wp-tag-resolver → [optional] Gemini image generation → create WordPress draft → update Yoast SEO meta → send notification email.
 
+### Workflow 4 — Manual URL draft entry (`manual-url-draft.json`)
+
+Paste any article URL → Jina fetches the article and extracts the title → Gemini classifies the category → calls the `create-draft.json` sub-workflow. The form responds immediately; the draft is built in the background and the editor is notified by email when done.
+
+> Deploy one copy per editor. Replace `YOUR_AUTHOR_ID` with that editor's WordPress username so each person gets their own link without needing to select an author in the form.
+
 ### `wp-tag-resolver/` — Express microservice
 
 `POST /resolve-tags { tags: ["Tag A", "Tag B"] }` → query WordPress Tags API, create if missing → return `{ tagIds: [123, 456] }`
@@ -235,6 +253,7 @@ Generate a WordPress Application Password: Dashboard → Users → Profile → A
 1. Import `create-draft.json` first — copy its Workflow ID
 2. Import `draft-trigger.json` — set `YOUR_SUBWORKFLOW_ID` in the "呼叫子流程" node
 3. Import `news-digest.json`
+4. (Optional) Import `manual-url-draft.json` — set `YOUR_SUBWORKFLOW_ID` in the "Call Draft Sub-workflow" node and replace `YOUR_AUTHOR_ID` with a WordPress username; deploy one copy per editor
 
 ### 4. Replace placeholders
 
@@ -255,6 +274,9 @@ Generate a WordPress Application Password: Dashboard → Users → Profile → A
 | `YOUR_N8N_DOMAIN` | Your n8n public URL (webhook must be externally reachable) |
 | `YOUR_SUBWORKFLOW_ID` | Workflow ID of create-draft.json |
 | `YOUR_CATEGORY_ID` | WordPress category ID (wp-admin → Posts → Categories) |
+| `YOUR_AUTHOR_ID` | WordPress username for the editor (manual-url-draft.json only) |
+| `YOUR_FORM_WEBHOOK_ID` | Any unique string used as the form URL path (manual-url-draft.json only) |
+| `YOUR_DEFAULT_CATEGORY` | Fallback category name when Gemini cannot classify (manual-url-draft.json only) |
 
 ### 5. Customize prompts
 
@@ -264,7 +286,7 @@ In `create-draft.json`, update the `categoryMap` in the "組合內文與資料" 
 
 ### 6. Activate
 
-Enable all three workflows. `news-digest.json` runs on cron (default: Monday, Wednesday, Friday at 08:00).
+Enable all workflows. `news-digest.json` runs on cron (default: Monday, Wednesday, Friday at 08:00). `manual-url-draft.json` becomes available via the n8n-hosted form URL as soon as it is activated.
 
 ---
 
