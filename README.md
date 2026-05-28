@@ -198,6 +198,8 @@ Fetch & clean article HTML → Gemini rewrite (structured output: paragraphs, SE
 
 ### Workflow 4 — Manual URL draft entry (`manual-url-draft.json`)
 
+![manual-url-draft workflow](docs/images/manual-url-draft.png)
+
 Paste any article URL → Jina fetches the article and extracts the title → Gemini classifies the category → calls the `create-draft.json` sub-workflow. The form responds immediately; the draft is built in the background and the editor is notified by email when done.
 
 > Deploy one copy per editor. Replace `YOUR_AUTHOR_ID` with that editor's WordPress username so each person gets their own link without needing to select an author in the form.
